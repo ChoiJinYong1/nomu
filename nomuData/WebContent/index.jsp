@@ -4,7 +4,7 @@
 
 <HTML>
 	<HEAD>
-		<TITLE> Test Page </TITLE>
+		<TITLE> 201811281350 </TITLE>
 		<script language="javascript" src="./script/jquery-1.11.0.min.js"></script>
 		<script src="http://code.jquery.com/jquery-latest.js"></script>
 		<script language="javascript">
@@ -89,7 +89,8 @@
 				}else {
 					rowData = rowHashMap.get(id);
 				}
-
+				console.log("rowData");
+				console.log(rowData);
 			    $.ajax({
 			        type : 'post',
 			        url : appUrl + rowData.url,
@@ -109,14 +110,22 @@
 			        	$("#url").val(rowData.url);
 						$("#request").val(rowData.json);
 						$("#response").val(JSON.stringify(data));
-						
+			            console.log("url:"+rowData.url);
+			            console.log("request:"+ rowData.json);
+			            console.log("response:"+ JSON.stringify(data));
+			            console.log("data.ROWS[0]:"+ data.ROWS[0]);
 						var row0 = data.ROWS[0],
 							resultData = row0.RESULT_DATA,
 							rowInfo = null;
-						
+						console.log("rowData.json");
+						console.log(rowData.json);
+						//console.log("rowHashMap");
+						//console.log(rowHashMap.put(rowData.id, rowData));
 						if ("COMMON.AUTHLOGIN_S" == row0.REQUEST_ID){
 							if ("200" == row0.RESULT_CODE) {
 								rowInfo = resultData[0];
+								console.log("rowInfo:");
+								console.log(rowInfo);
 								
 								$("#appId").val(rowInfo.APPID);
 								$("#deviceId").val(rowInfo.DEVICEID);
@@ -137,8 +146,8 @@
 				rowData.id 		= "COMMON.AUTHLOGIN_S";
 				rowData.url 	= "/web/login";
 				rowData.json 	= '{"ROWS":[{"REQUEST_ID":"S|COMMON.AUTHLOGIN_S","PARAMETER":{"USERID":"sb0950","USERPW":"sbsb7356","APPID":"API_WEB","DEVICEID":"API_NOMU_M0079","REMARK":"IE 8.0"}}]}';
+				console.log(rowData);
 				rowHashMap.put(rowData.id, rowData);
-
 				// ------------------------------------------------------------------------------------------------------------
 				// 노무API
 				//노무자출역정보조회(일일)
