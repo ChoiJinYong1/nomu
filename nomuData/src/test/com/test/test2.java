@@ -22,23 +22,15 @@ public class test2 {
     return sb.toString();
   }
 
-  public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-    InputStream is = new URL(url).openStream();
-    try {
-      BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
-      String jsonText = readAll(rd);
-      JSONObject json = new JSONObject(jsonText);
-      return json;
-    } finally {
-      is.close();
-    }
-  }
-
   public static void main(String[] args) throws IOException, JSONException {
-    JSONObject json = readJsonFromUrl("http://nomu.hyunjang.co.kr:8001/NomuApiService/rest/web/login");
-    json.append("id", "COMMON.AUTHLOGIN_S");
-    
-    System.out.println(json.toString());
-    System.out.println(json.get("id"));
+	  String urlStr = "http://hmkcode.appspot.com/jsonservlet";
+	  InputStream is = new URL(urlStr).openStream();
+	  try {
+	      BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+	      String jsonText = readAll(rd);
+	      System.out.println(jsonText);
+	    } finally {
+	      is.close();
+	    } 
   }
 }
