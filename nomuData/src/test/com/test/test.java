@@ -33,8 +33,6 @@ public class test {
 	
 	private static final String NOMUPW = "sbsb7356";
 	
-	private static final String SITEID = "S300011863";
-	
 	private static final String POST_URL = "http://nomu.hyunjang.co.kr:8001/NomuApiService/rest/web/login";
 
 	private static final String POST_URL2 = "http://nomu.hyunjang.co.kr:8001/NomuApiService/rest/web/workercommon";
@@ -64,7 +62,9 @@ public class test {
 	                    // 콘솔에 현재 시간 출력
 
 	                    System.out.println(fmt.format(cal.getTime())) ;
+	                    System.out.println("getStart") ;
 	            		sendPOST();
+	                    System.out.println("getEnd") ;
 	                     
 	                } catch (Exception e) {
 	                     
@@ -83,13 +83,13 @@ public class test {
 	
 	
 	private static String getAuthKey() throws IOException{
-
 		CloseableHttpClient httpClient = HttpClients.createDefault();
 		HttpPost httpPost = new HttpPost(POST_URL);
 		httpPost.addHeader("User-Agent", USER_AGENT);
 
 		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
-		
+
+        
 		
 		
 		String tempStr = "{\"ROWS\":[{\"REQUEST_ID\":\"S|COMMON.AUTHLOGIN_S\",\"PARAMETER\":{\"USERID\":\"" + NOMUID + "\",\"USERPW\":\"" + NOMUPW + "\",\"APPID\":\"API_WEB\",\"DEVICEID\":\"API_NOMU_M0079\",\"REMARK\":\"IE 8.0\"}}]}";
@@ -97,7 +97,10 @@ public class test {
 		HttpEntity postParams = new UrlEncodedFormEntity(urlParameters);
 		httpPost.setEntity(postParams);
 
+		System.out.println("setEntity Start") ;
+		
 		CloseableHttpResponse httpResponse = httpClient.execute(httpPost);
+		System.out.println("execute Start") ;
 		
 		
 		
@@ -127,25 +130,125 @@ public class test {
 	
 	}
 	
-	@SuppressWarnings("deprecation")
+	//@SuppressWarnings("deprecation")
 	private static void sendPOST() throws IOException {
+		String tSiteCD = "";
+		
+		System.out.println("httpClient Start") ;
 
 		CloseableHttpClient httpClient = HttpClients.createDefault();
+		System.out.println("addHeader Start") ;
 		HttpPost httpPost = new HttpPost(POST_URL2);
 		httpPost.addHeader("User-Agent", USER_AGENT);
 		httpPost.addHeader("DEVICEID", "API_NOMU_M0079");
 		httpPost.addHeader("APPID", "API_WEB");
 		httpPost.addHeader("AUTHKEY", getAuthKey());
+		System.out.println("addHeader End") ;
 		
 
 		Date now = new Date();
 
 		//now.setYear(2018);
-		now.setMonth(10);
-		now.setDate(15);
+		//now.setMonth(10);
+		//now.setDate(15);
 		
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 		String tDate = format.format(now).toString();
+
+		
+		
+		try {
+			String driverName = "org.gjt.mm.mysql.Driver";
+			String DBName = "shinboerp";
+			String dbURL = "jdbc:mysql://localhost:3306/" + DBName;
+			
+			Class.forName(driverName);
+			
+			Connection con = DriverManager.getConnection(dbURL, "root", "1111");
+			System.out.println("Mysql DB Connection.");
+			
+			ResultSet rs = getSitecd(con);
+			
+			if(rs.isBeforeFirst()) {
+				while(rs.next()) {
+					tSiteCD = "";
+					tSiteCD = rs.getString("site_cd");
+					
+					System.out.println(rs.getString("site_nm") + "(" + rs.getString("site_cd") +") INSERT Start");
+					List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
+					
+					String tempStr = "{\"ROWS\":[{\"REQUEST_ID\":\"S|USERAPI.WORKING_SEARCH_S\",\"PARAMETER\":{\"COM_CD\":\"M0079\",\"SITE_CD\":\"" + tSiteCD + "\",\"REQDATE\":\"" + tDate + "\",\"RES_NO\":\"\"}}]}";
+					System.out.println(tempStr);
+					urlParameters.add(new BasicNameValuePair("JSON", tempStr));
+					
+					HttpEntity postParams = new UrlEncodedFormEntity(urlParameters);
+					httpPost.setEntity(postParams);
+					
+					CloseableHttpResponse httpResponse = httpClient.execute(httpPost);					
+
+					BufferedReader reader = new BufferedReader(new InputStreamReader(
+							httpResponse.getEntity().getContent(),"UTF-8"));
+					String inputLine;
+					StringBuffer response = new StringBuffer();
+
+					while ((inputLine = reader.readLine()) != null) {
+						response.append(inputLine);
+					}
+					reader.close();
+
+					
+					String jpStr = response.toString();
+					
+					JSONObject jo = new JSONObject(jpStr);
+					JSONObject jo2 = new JSONObject(jo.get("ROWS").toString().substring(1, jo.get("ROWS").toString().length() - 1));
+					
+					JSONArray ja3 = jo2.getJSONArray("RESULT_DATA");
+
+					for(int i=0; i< ja3.length(); i++) {
+						JSONObject tempoj = ja3.getJSONObject(i);
+						insert (tempoj, con, tDate, tSiteCD);
+					}
+					
+				}
+			}
+			
+			
+
+			httpClient.close();
+			con.close();	
+		} catch(Exception e){
+			System.out.println("Mysql Server Not Connection.");			
+			e.printStackTrace();
+		}
+		
+		
+		
+	}
+	
+	/*
+	@SuppressWarnings("deprecation")
+	private static void sendPOST() throws IOException {
+		System.out.println("httpClient Start") ;
+
+		CloseableHttpClient httpClient = HttpClients.createDefault();
+		System.out.println("addHeader Start") ;
+		HttpPost httpPost = new HttpPost(POST_URL2);
+		httpPost.addHeader("User-Agent", USER_AGENT);
+		httpPost.addHeader("DEVICEID", "API_NOMU_M0079");
+		httpPost.addHeader("APPID", "API_WEB");
+		httpPost.addHeader("AUTHKEY", getAuthKey());
+		System.out.println("addHeader End") ;
+		
+
+		Date now = new Date();
+
+		//now.setYear(2018);
+		//now.setMonth(10);
+		//now.setDate(15);
+		
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+		String tDate = format.format(now).toString();
+		
 		
 		
 		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
@@ -208,11 +311,11 @@ public class test {
 		}
 		
 	}
-	
-	private static void insert(JSONObject jo, Connection con, String tDate) throws SQLException {
-		String qc = " SELECT nomu_idx, start_time, end_time FROM nomu WHERE stddate = '" + tDate + "' and resno = '" + jo.get("RESNO") + "'";
-		String qc2 = "INSERT INTO nomu(stddate, name, resno, end_time, start_time, create_id) "	+ "VALUES (?, ?, ?, ?, ?, 'admin')";
-		String qc3 = "UPDATE nomu SET start_time = ?, end_time = ? WHERE stddate = '" + tDate + "' AND resno = ?" ;
+	*/
+	private static void insert(JSONObject jo, Connection con, String tDate, String tSiteCD) throws SQLException {
+		String qc = " SELECT nomu_idx, start_time, site_cd, end_time FROM nomu WHERE stddate = '" + tDate + "' and resno = '" + jo.get("RESNO") + "'";
+		String qc2 = "INSERT INTO nomu(stddate, site_cd, name, resno, end_time, start_time, create_id) "	+ "VALUES (?, ?, ?, ?, ?, ?, 'admin')";
+		String qc3 = "UPDATE nomu SET start_time = ?, end_time = ? WHERE stddate = '" + tDate + "' AND resno = ? AND site_cd = ?" ;
 		PreparedStatement st = con.prepareStatement(qc);		
 		//System.out.println(st);
 		ResultSet rs = st.executeQuery();
@@ -235,6 +338,7 @@ public class test {
 					st.setString(1, jo.getString("START_TIME"));
 					st.setString(2, jo.optString("END_TIME",null));
 					st.setString(3, jo.getString("RESNO"));
+					st.setString(4, tSiteCD);
 					rs2 = st.executeUpdate();
 					//st.execute();			
 					System.out.println(getSQL(st) + "\r" + "result : " + rs2);	
@@ -246,10 +350,11 @@ public class test {
 			
 			st = con.prepareStatement(qc2);
 			st.setString(1, tDate);
-			st.setString(2, jo.getString("NAME"));
-			st.setString(3, jo.getString("RESNO"));
-			st.setString(4, jo.optString("END_TIME",null));
-			st.setString(5, jo.getString("START_TIME"));
+			st.setString(2, tSiteCD);
+			st.setString(3, jo.getString("NAME"));
+			st.setString(4, jo.getString("RESNO"));
+			st.setString(5, jo.optString("END_TIME",null));
+			st.setString(6, jo.getString("START_TIME"));
 			rs2 = st.executeUpdate();
 			System.out.println(getSQL(st) + "\r" + "result : " + rs2);
 							
@@ -266,6 +371,15 @@ public class test {
 	    tempSQL = tempSQL.substring(i1);
 
 	    return tempSQL;
+	}
+	
+	private static ResultSet getSitecd(Connection con) throws SQLException {
+		String qc = " SELECT site_cd, site_nm FROM nomu_site";
+		PreparedStatement st = con.prepareStatement(qc);
+		ResultSet rs = st.executeQuery();
+		
+		
+		return rs;
 	}
 
 }
