@@ -3,12 +3,16 @@ package test.com.test;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.Date;
+
 
 import java.sql.*;
 import java.text.SimpleDateFormat;
@@ -36,51 +40,55 @@ public class test {
 	private static final String POST_URL = "http://nomu.hyunjang.co.kr:8001/NomuApiService/rest/web/login";
 
 	private static final String POST_URL2 = "http://nomu.hyunjang.co.kr:8001/NomuApiService/rest/web/workercommon";
-	
-	
+
+	private static final String DRIVERNAME = "org.gjt.mm.mysql.Driver";
+
+	private static final String DBNAME = "shinboerp";
+
+	private static final String DBURL = "jdbc:mysql://localhost:3306/" + DBNAME;
+
 	public static void main(String[] args) throws IOException {
 		
 		
-		   int sleepSec = 6 ;
+	   int sleepSec = 3 ;
 	         
 	        // 시간 출력 포맷
-	        final SimpleDateFormat fmt = new SimpleDateFormat("HH:mm:ss");
+       final SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	 
-	         
 	        // 주기적인 작업을 위한
-	        final ScheduledThreadPoolExecutor exec = new ScheduledThreadPoolExecutor(1);
-	         
-	         
-	        exec.scheduleAtFixedRate(new Runnable(){
-	             
-	            public void run(){
-	                try {
-	 
-	                    Calendar cal = Calendar.getInstance() ;
-	                     
-	                     
-	                    // 콘솔에 현재 시간 출력
-
-	                    System.out.println(fmt.format(cal.getTime())) ;
-	                    System.out.println("getStart") ;
-	            		sendPOST();
-	                    System.out.println("getEnd") ;
-	                     
-	                } catch (Exception e) {
-	                     
-	                    e.printStackTrace();
-	                     
-	                     
-	                    // 에러 발생시 Executor를 중지시킨다
-	                    exec.shutdown() ;
+       final ScheduledThreadPoolExecutor exec = new ScheduledThreadPoolExecutor(1);
+	   
+       
+       exec.scheduleAtFixedRate(new Runnable(){
+             
+            public void run(){
+                try {
+ 
+                    Calendar cal = Calendar.getInstance() ;                     
+                     
+                    // 콘솔에 현재 시간 출력
+                    System.out.println("============================	getStart	============================") ;
+                    System.out.println("작업시작시간 : " + fmt.format(cal.getTime())) ;
+	                if(isHostAvailable("nomu.hyunjang.co.kr")) {
+	                	System.out.println("인터넷 연결 확인 완료하였습니다.") ;
+	                	sendPOST();
+	                } else {
+	                	System.out.println("인터넷연결을 확인하십시요.");
 	                }
+	                	
+	                System.out.println("============================	getEnd		============================") ;
+	                 
+	            } catch (Exception e) {
+	                 
+	                e.printStackTrace();
+	                 
+	                 
+	                // 에러 발생시 Executor를 중지시킨다
+	                exec.shutdown() ;
 	            }
-	        }, 0, sleepSec, TimeUnit.HOURS);
-	    }
-		
-		
-		
-	
+            }
+       }, 0, sleepSec, TimeUnit.HOURS);
+	}
 	
 	private static String getAuthKey() throws IOException{
 		CloseableHttpClient httpClient = HttpClients.createDefault();
@@ -88,21 +96,13 @@ public class test {
 		httpPost.addHeader("User-Agent", USER_AGENT);
 
 		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
-
-        
-		
 		
 		String tempStr = "{\"ROWS\":[{\"REQUEST_ID\":\"S|COMMON.AUTHLOGIN_S\",\"PARAMETER\":{\"USERID\":\"" + NOMUID + "\",\"USERPW\":\"" + NOMUPW + "\",\"APPID\":\"API_WEB\",\"DEVICEID\":\"API_NOMU_M0079\",\"REMARK\":\"IE 8.0\"}}]}";
 		urlParameters.add(new BasicNameValuePair("JSON", tempStr));
 		HttpEntity postParams = new UrlEncodedFormEntity(urlParameters);
 		httpPost.setEntity(postParams);
-
-		System.out.println("setEntity Start") ;
 		
-		CloseableHttpResponse httpResponse = httpClient.execute(httpPost);
-		System.out.println("execute Start") ;
-		
-		
+		CloseableHttpResponse httpResponse = httpClient.execute(httpPost);		
 		
 		System.out.println("POST Response Status:: "
 				+ httpResponse.getStatusLine().getStatusCode());
@@ -130,41 +130,28 @@ public class test {
 	
 	}
 	
-	//@SuppressWarnings("deprecation")
 	private static void sendPOST() throws IOException {
 		String tSiteCD = "";
 		
-		System.out.println("httpClient Start") ;
 
 		CloseableHttpClient httpClient = HttpClients.createDefault();
-		System.out.println("addHeader Start") ;
 		HttpPost httpPost = new HttpPost(POST_URL2);
 		httpPost.addHeader("User-Agent", USER_AGENT);
 		httpPost.addHeader("DEVICEID", "API_NOMU_M0079");
 		httpPost.addHeader("APPID", "API_WEB");
 		httpPost.addHeader("AUTHKEY", getAuthKey());
-		System.out.println("addHeader End") ;
 		
 
 		Date now = new Date();
-
-		//now.setYear(2018);
-		//now.setMonth(10);
-		//now.setDate(15);
 		
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 		String tDate = format.format(now).toString();
 
-		
-		
 		try {
-			String driverName = "org.gjt.mm.mysql.Driver";
-			String DBName = "shinboerp";
-			String dbURL = "jdbc:mysql://localhost:3306/" + DBName;
 			
-			Class.forName(driverName);
+			Class.forName(DRIVERNAME);
 			
-			Connection con = DriverManager.getConnection(dbURL, "root", "1111");
+			Connection con = DriverManager.getConnection(DBURL, "root", "1111");
 			System.out.println("Mysql DB Connection.");
 			
 			ResultSet rs = getSitecd(con);
@@ -174,11 +161,11 @@ public class test {
 					tSiteCD = "";
 					tSiteCD = rs.getString("site_cd");
 					
-					System.out.println(rs.getString("site_nm") + "(" + rs.getString("site_cd") +") INSERT Start");
+					System.out.println(rs.getString("site_nm") + "(" + rs.getString("site_cd") +")");
 					List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
 					
 					String tempStr = "{\"ROWS\":[{\"REQUEST_ID\":\"S|USERAPI.WORKING_SEARCH_S\",\"PARAMETER\":{\"COM_CD\":\"M0079\",\"SITE_CD\":\"" + tSiteCD + "\",\"REQDATE\":\"" + tDate + "\",\"RES_NO\":\"\"}}]}";
-					System.out.println(tempStr);
+					//System.out.println(tempStr);
 					urlParameters.add(new BasicNameValuePair("JSON", tempStr));
 					
 					HttpEntity postParams = new UrlEncodedFormEntity(urlParameters);
@@ -195,7 +182,6 @@ public class test {
 						response.append(inputLine);
 					}
 					reader.close();
-
 					
 					String jpStr = response.toString();
 					
@@ -203,16 +189,18 @@ public class test {
 					JSONObject jo2 = new JSONObject(jo.get("ROWS").toString().substring(1, jo.get("ROWS").toString().length() - 1));
 					
 					JSONArray ja3 = jo2.getJSONArray("RESULT_DATA");
-
-					for(int i=0; i< ja3.length(); i++) {
-						JSONObject tempoj = ja3.getJSONObject(i);
-						insert (tempoj, con, tDate, tSiteCD);
+					if(ja3.length() == 0 ) {
+						System.out.println("저장할 데이터가 없습니다.");
+					} else {
+						for(int i=0; i< ja3.length(); i++) {
+							JSONObject tempoj = ja3.getJSONObject(i);
+							insert (tempoj, con, tDate, tSiteCD);
+						}	
 					}
+					
 					
 				}
 			}
-			
-			
 
 			httpClient.close();
 			con.close();	
@@ -220,129 +208,47 @@ public class test {
 			System.out.println("Mysql Server Not Connection.");			
 			e.printStackTrace();
 		}
-		
-		
-		
 	}
 	
-	/*
-	@SuppressWarnings("deprecation")
-	private static void sendPOST() throws IOException {
-		System.out.println("httpClient Start") ;
-
-		CloseableHttpClient httpClient = HttpClients.createDefault();
-		System.out.println("addHeader Start") ;
-		HttpPost httpPost = new HttpPost(POST_URL2);
-		httpPost.addHeader("User-Agent", USER_AGENT);
-		httpPost.addHeader("DEVICEID", "API_NOMU_M0079");
-		httpPost.addHeader("APPID", "API_WEB");
-		httpPost.addHeader("AUTHKEY", getAuthKey());
-		System.out.println("addHeader End") ;
-		
-
-		Date now = new Date();
-
-		//now.setYear(2018);
-		//now.setMonth(10);
-		//now.setDate(15);
-		
-		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-		String tDate = format.format(now).toString();
-		
-		
-		
-		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
-		
-		String tempStr = "{\"ROWS\":[{\"REQUEST_ID\":\"S|USERAPI.WORKING_SEARCH_S\",\"PARAMETER\":{\"COM_CD\":\"M0079\",\"SITE_CD\":\"" + SITEID + "\",\"REQDATE\":\"" + tDate + "\",\"RES_NO\":\"\"}}]}";
-		urlParameters.add(new BasicNameValuePair("JSON", tempStr));
-		
-		HttpEntity postParams = new UrlEncodedFormEntity(urlParameters);
-		httpPost.setEntity(postParams);
-
-		CloseableHttpResponse httpResponse = httpClient.execute(httpPost);
-		
-		//System.out.println("POST Response Status: "
-				//+ httpResponse.getStatusLine().getStatusCode());
-
-		BufferedReader reader = new BufferedReader(new InputStreamReader(
-				httpResponse.getEntity().getContent(),"UTF-8"));
-		String inputLine;
-		StringBuffer response = new StringBuffer();
-
-		while ((inputLine = reader.readLine()) != null) {
-			response.append(inputLine);
-		}
-		reader.close();
-
-		httpClient.close();
-		
-		String jpStr = response.toString();
-		
-		JSONObject jo = new JSONObject(jpStr);
-		JSONObject jo2 = new JSONObject(jo.get("ROWS").toString().substring(1, jo.get("ROWS").toString().length() - 1));
-		
-		JSONArray ja3 = jo2.getJSONArray("RESULT_DATA");
-
-		//System.out.println("RESULT_DATA: "
-			//	+ ja3.toString());
-		//System.out.println("ja3.length(): "
-			//	+ ja3.length());
-		
-		try {
-			String driverName = "org.gjt.mm.mysql.Driver";
-			String DBName = "shinboerp";
-			String dbURL = "jdbc:mysql://localhost:3306/" + DBName;
-			//String SQL = " select * from account;";
-			
-			Class.forName(driverName);
-			
-			Connection con = DriverManager.getConnection(dbURL, "root", "1111");
-			System.out.println("Mysql DB Connection.");
-			
-			
-			for(int i=0; i< ja3.length(); i++) {
-				JSONObject tempoj = ja3.getJSONObject(i);
-				insert (tempoj, con, tDate);
-			}
-			con.close();	
-		} catch(Exception e){
-			System.out.println("Mysql Server Not Connection.");			
-			e.printStackTrace();
-		}
-		
-	}
-	*/
-	private static void insert(JSONObject jo, Connection con, String tDate, String tSiteCD) throws SQLException {
-		String qc = " SELECT nomu_idx, start_time, site_cd, end_time FROM nomu WHERE stddate = '" + tDate + "' and resno = '" + jo.get("RESNO") + "'";
+	private static void insert(JSONObject jo, Connection con, String tDate, String tSiteCD) throws SQLException, Exception {
+		String qc = " SELECT nomu_idx, start_time, site_cd, end_time, name FROM nomu WHERE stddate = '" + tDate + "' and resno = '" + jo.get("RESNO") + "'";
 		String qc2 = "INSERT INTO nomu(stddate, site_cd, name, resno, end_time, start_time, create_id) "	+ "VALUES (?, ?, ?, ?, ?, ?, 'admin')";
 		String qc3 = "UPDATE nomu SET start_time = ?, end_time = ? WHERE stddate = '" + tDate + "' AND resno = ? AND site_cd = ?" ;
-		PreparedStatement st = con.prepareStatement(qc);		
-		//System.out.println(st);
+		PreparedStatement st = con.prepareStatement(qc);
 		ResultSet rs = st.executeQuery();
-		//System.out.println(rs.isBeforeFirst());
 		st = null;
 		int rs2 = 0;
 		
-		//SimpleDateFormat trans = new SimpleDateFormat("yyyy-MM-DD HH:mm:ss");
-		
 		if(rs.isBeforeFirst()) {
 			while(rs.next()) {
-				//System.out.println(trans.format(rs.getTimestamp("start_time"))  + "|" + jo.getString("START_TIME") );
-				//System.out.println(trans.format(rs.getTimestamp("start_time"))  + "|" + jo.getString("START_TIME") );
+				String jostartdt = new String();
+				String rsstartdt = new String();
+				String joenddt = new String();
+				String rsenddt = new String();				
 				
-				//System.out.println( "|" + jo.optString("END_TIME", null));
-				//System.out.println(trans.format(rs.getTimestamp("end_time"))  + "|" + jo.opt("END_TIME"));
-				//System.out.println(trans.format(rs.getTimestamp("end_time")).toString()  + "|" + jo.optString("END_TIME",null));
-				//if(rs.getDate("start_time").toString() != jo.getString("START_TIME").toString() || rs.getDate("end_time").toString() != jo.optString("END_TIME",null).toString()) {
-					st = con.prepareStatement(qc3);
+				jostartdt = jo.optString("START_TIME", "");
+				if(rs.getString("start_time") == null)
+					rsstartdt = "";
+				else
+					rsstartdt = rs.getString("start_time").substring(0, 19);
+				joenddt = jo.optString("END_TIME", "");
+				if(rs.getString("end_time") == null)
+					rsenddt = "";
+				else
+					rsenddt = rs.getString("end_time").substring(0, 19);
+				
+				if(jostartdt.equals(rsstartdt) && joenddt.equals(rsenddt)) {
+					System.out.println(rs.getString("name") + ":변경사항 없음");
+						
+				} else {
+					st = con.prepareStatement(qc3);					
 					st.setString(1, jo.getString("START_TIME"));
 					st.setString(2, jo.optString("END_TIME",null));
 					st.setString(3, jo.getString("RESNO"));
 					st.setString(4, tSiteCD);
 					rs2 = st.executeUpdate();
-					//st.execute();			
-					System.out.println(getSQL(st) + "\r" + "result : " + rs2);	
-				//}
+					System.out.println(getSQL(st) + "\r" + "result : " + rs2);
+				}
 			}
 									
 			
@@ -357,7 +263,6 @@ public class test {
 			st.setString(6, jo.getString("START_TIME"));
 			rs2 = st.executeUpdate();
 			System.out.println(getSQL(st) + "\r" + "result : " + rs2);
-							
 			
 		}
 		
@@ -378,8 +283,22 @@ public class test {
 		PreparedStatement st = con.prepareStatement(qc);
 		ResultSet rs = st.executeQuery();
 		
-		
 		return rs;
 	}
+	
+	private static boolean isHostAvailable(String hostName) throws IOException
+    {
+        try(Socket socket = new Socket())
+        {
+            int port = 80;
+            InetSocketAddress socketAddress = new InetSocketAddress(hostName, port);
+            socket.connect(socketAddress, 3000);
 
+            return true;
+        }
+        catch(UnknownHostException unknownHost)
+        {
+            return false;
+        }
+    }
 }
